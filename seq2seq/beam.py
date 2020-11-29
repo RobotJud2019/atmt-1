@@ -1,7 +1,10 @@
 import torch
+import numpy as np
 
 from itertools import count
 from queue import PriorityQueue
+
+import copy
 
 
 class BeamSearch(object):
@@ -12,6 +15,9 @@ class BeamSearch(object):
         self.max_len = max_len
         self.pad = pad
 
+        self.alpha = 0.9
+        self.gamma = 0.7
+
         self.nodes = PriorityQueue() # beams to be expanded
         self.final = PriorityQueue() # beams that ended in EOS
 
@@ -19,14 +25,16 @@ class BeamSearch(object):
 
     def add(self, score, node):
         """ Adds a new beam search node to the queue of current nodes """
-        self.nodes.put((score, next(self._counter), node))
+        lp = ((5 + node.length)** self.alpha ) / (( 5 + 1 ) **  self.alpha)
+        self.nodes.put((score/lp, next(self._counter), node))
 
     def add_final(self, score, node):
         """ Adds a beam search path that ended in EOS (= finished sentence) """
         # ensure all node paths have the same length for batch ops
         missing = self.max_len - node.length
-        node.sequence = torch.cat((node.sequence, torch.tensor([self.pad]*missing).long()))
-        self.final.put((score, next(self._counter), node))
+        node.sequence = torch.cat((node.sequence.cpu(), torch.tensor([self.pad]*missing).long()))
+        lp = ((5 + node.length)** self.alpha ) / (( 5 + 1 ) **  self.alpha)
+        self.final.put((score/lp, next(self._counter), node))
 
     def get_current_beams(self):
         """ Returns beam_size current nodes with the lowest negative log probability """
@@ -36,10 +44,39 @@ class BeamSearch(object):
             nodes.append((node[0], node[2]))
         return nodes
 
+    def get_bestN(self, N):
+        """ Returns final node with the lowest negative log probability """
+        # Merge EOS paths and those that were stopped by
+        # max sequence length (still in nodes)
+        merged = PriorityQueue()
+        for i in range(N):
+            if self.final.empty(): continue
+            node = self.final.get()
+            if node[0].data <= self.gamma * i: node[0].data = torch.tensor(0.01)
+            else: node[0].data = node[0].data - self.gamma * i
+            merged.put(node)
+
+        if not self.nodes.empty:
+            for j in range(np.min(N, self.nodes.qsize())):
+                node = self.nodes.get() 
+                if node[0].data <= self.gamma * j: node[0].data = torch.tensor(0.01)
+                else: node[0].data = node[0].data - self.gamma * j
+                merged.put(node)
+
+        # modify here to retun a list of N nodes instead of 1 node
+        Nnodes = []
+        while (merged.qsize() > 0): 
+            n = merged.get()
+            n = (n[0], n[2])
+            Nnodes.append(n)
+
+        return Nnodes
+
     def get_best(self):
         """ Returns final node with the lowest negative log probability """
         # Merge EOS paths and those that were stopped by
         # max sequence length (still in nodes)
+        print("in get_best, self.final.qsize():", self.final.qsize(), "   self.nodes.qsize():", self.nodes.qsize())
         merged = PriorityQueue()
         for _ in range(self.final.qsize()):
             node = self.final.get()
