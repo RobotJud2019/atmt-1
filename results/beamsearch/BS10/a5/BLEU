@@ -1,0 +1,2 @@
+(base) xhta@xhta-VirtualBox3:~/mt/hw4/atmt$ ./instr
+BLEU+case.mixed+numrefs.1+smooth.exp+tok.13a+version.1.4.14 = 22.4 59.4/31.1/18.5/11.3 (BP = 0.901 ratio = 0.905 hyp_len = 3524 ref_len = 3892)
