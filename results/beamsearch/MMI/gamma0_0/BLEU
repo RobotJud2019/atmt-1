@@ -1,0 +1,2 @@
+cat model_translations.out | sacrebleu data_asg4/raw_data/test.en 
+BLEU+case.mixed+numrefs.1+smooth.exp+tok.13a+version.1.4.14 = 20.9 53.7/27.7/17.1/10.4 (BP = 0.923 ratio = 0.926 hyp_len = 3603 ref_len = 3892)
