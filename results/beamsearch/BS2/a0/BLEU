@@ -1,0 +1,2 @@
+(base) xhta@xhta-VirtualBox3:~/mt/hw4/atmt$ cat model_translations.out | sacrebleu data_asg4/raw_data/test.en 
+BLEU+case.mixed+numrefs.1+smooth.exp+tok.13a+version.1.4.14 = 22.0 56.5/28.8/17.3/10.3 (BP = 0.946 ratio = 0.948 hyp_len = 3689 ref_len = 3892)
