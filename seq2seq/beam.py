@@ -15,7 +15,7 @@ class BeamSearch(object):
         self.max_len = max_len
         self.pad = pad
 
-        self.alpha = 0.9
+        self.alpha = 0.7
         self.gamma = 0.7
 
         self.nodes = PriorityQueue() # beams to be expanded
